@@ -11,12 +11,14 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 import re
+from twitter_integration import TwitterPoster
 
 class ErosionBroadcaster:
     def __init__(self):
         self.erosion_repo = "https://github.com/closestfriend/digital-erosion.git"
         self.local_erosion_path = Path("./erosion_clone")
         self.state_file = Path(".broadcaster_state.json")
+        self.twitter = TwitterPoster()
         self.load_state()
         
     def load_state(self):
@@ -289,9 +291,15 @@ class ErosionBroadcaster:
                     print(tweet)
                     print(f"{'='*50}\n")
                 else:
-                    # This is where we'd actually post to Twitter
-                    # For now, just log it
-                    print(f"Tweet posted: {tweet[:50]}...")
+                    # Actually post to Twitter
+                    if self.twitter.connected:
+                        tweet_id = self.twitter.post_tweet(tweet)
+                        if tweet_id:
+                            print(f"✓ Tweet posted successfully: https://twitter.com/i/web/status/{tweet_id}")
+                        else:
+                            print("⚠ Failed to post tweet")
+                    else:
+                        print("⚠ Twitter not connected, cannot post tweet")
                 
                 self.state['last_tweeted_commit'] = commit['hash']
                 self.state['total_tweets'] += 1

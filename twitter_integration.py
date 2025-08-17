@@ -7,6 +7,7 @@ Handles actual posting to Twitter/X API
 import os
 import tweepy
 from typing import Optional
+from pathlib import Path
 
 class TwitterPoster:
     def __init__(self):
@@ -14,6 +15,9 @@ class TwitterPoster:
         self.api = None
         self.client = None
         self.connected = False
+        
+        # Load from .local.env if it exists
+        self._load_local_env()
         
         # Get credentials from environment
         api_key = os.environ.get('TWITTER_API_KEY')
@@ -42,6 +46,19 @@ class TwitterPoster:
         else:
             print("⚠ Twitter API credentials not found in environment")
             self.connected = False
+    
+    def _load_local_env(self):
+        """Load environment variables from .env.local file if it exists"""
+        env_file = Path(__file__).parent / '.env.local'
+        if env_file.exists():
+            with open(env_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        # Only set if not already in environment (GitHub secrets take precedence)
+                        if key not in os.environ:
+                            os.environ[key] = value
     
     def verify_credentials(self):
         """Verify that we can connect to Twitter"""

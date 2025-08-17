@@ -1,1 +1,24 @@
+# Cloned erosion repository
 erosion_clone/
+
+# Environment variables with API keys
+.env.local
+.local.env
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# State files
+.broadcaster_state.json
+
+# System files
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log

@@ -25,9 +25,9 @@ jobs:
         run: |
           pip install tweepy
       
-      - name: Run broadcaster (dry run for now)
+      - name: Run broadcaster (live posting)
         run: |
-          python broadcast.py
+          python broadcast.py --live
         env:
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
           TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
