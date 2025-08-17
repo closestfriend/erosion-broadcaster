@@ -144,6 +144,44 @@ class ErosionBroadcaster:
         
         return None
     
+    def should_use_hashtags(self, commit, iteration, decay_level):
+        """Decide whether to include hashtags based on various factors"""
+        # Always use hashtags for restoration events (special occasions)
+        if "RESTORATION" in commit['message']:
+            return True
+        
+        # Use hashtags for milestone iterations
+        try:
+            iter_num = int(iteration)
+            if iter_num in [1, 10, 50, 100, 500, 1000] or iter_num % 100 == 0:
+                return True
+        except (ValueError, TypeError):
+            pass
+        
+        # Use hashtags for severe/critical decay (dramatic moments)
+        if decay_level in ['severe', 'critical']:
+            return True
+        
+        # Random chance: 30% of the time for regular tweets
+        return random.random() < 0.3
+
+    def get_hashtags(self, style_name, is_restoration=False):
+        """Get appropriate hashtags based on context"""
+        base_tags = ["#DigitalErosion"]
+        
+        if is_restoration:
+            return base_tags + ["#ConceptualArt"]
+        
+        # Vary hashtags by style
+        style_tags = {
+            "diagnostic": ["#SoftwareArt"],
+            "abstract": ["#CodePoetry"],
+            "verbose": ["#GenerativeArt"],
+            "minimalist": []  # Minimalist style avoids extra tags
+        }
+        
+        return base_tags + style_tags.get(style_name, [])
+
     def generate_tweet(self, commit):
         """Generate a poetic tweet from a commit"""
         iteration_match = re.search(r'iteration (\d+)', commit['message'])
@@ -153,8 +191,11 @@ class ErosionBroadcaster:
         if "RESTORATION" in commit['message']:
             tweet = f"☽ RESTORATION EVENT ☾\n\n"
             tweet += f"iteration {iteration}\n\n"
-            tweet += "the code remembers itself\nimperfectly\n\n"
-            tweet += "#DigitalErosion #ConceptualArt"
+            tweet += "the code remembers itself\nimperfectly"
+            
+            # Always include hashtags for restoration events
+            hashtags = self.get_hashtags("restoration", is_restoration=True)
+            tweet += f"\n\n{' '.join(hashtags)}"
             return tweet
         
         # Extract decay level
@@ -164,27 +205,36 @@ class ErosionBroadcaster:
         # Get a corrupted snippet
         snippet = self.get_corrupted_snippet(commit['hash'])
         
+        # Decide whether to use hashtags
+        use_hashtags = self.should_use_hashtags(commit, iteration, decay_level)
+        
         # Choose tweet style
         styles = [
-            self.minimalist_tweet,
-            self.verbose_tweet,
-            self.abstract_tweet,
-            self.diagnostic_tweet
+            ("minimalist", self.minimalist_tweet),
+            ("verbose", self.verbose_tweet),
+            ("abstract", self.abstract_tweet),
+            ("diagnostic", self.diagnostic_tweet)
         ]
         
-        style = random.choice(styles)
-        return style(iteration, decay_level, snippet, commit)
+        style_name, style_func = random.choice(styles)
+        return style_func(iteration, decay_level, snippet, commit, use_hashtags, style_name)
     
-    def minimalist_tweet(self, iteration, decay_level, snippet, commit):
+    def minimalist_tweet(self, iteration, decay_level, snippet, commit, use_hashtags, style_name):
         """Minimal, poetic style"""
         if snippet:
             # Clean up the snippet for poetry
             snippet = snippet.strip()[:100]
-            return f"iteration {iteration}\n\n{snippet}\n\n#DigitalErosion"
+            tweet = f"iteration {iteration}\n\n{snippet}"
         else:
-            return f"iteration {iteration}: {decay_level} decay\n\n#DigitalErosion"
+            tweet = f"iteration {iteration}: {decay_level} decay"
+        
+        if use_hashtags:
+            hashtags = self.get_hashtags(style_name)
+            tweet += f"\n\n{' '.join(hashtags)}"
+        
+        return tweet
     
-    def verbose_tweet(self, iteration, decay_level, snippet, commit):
+    def verbose_tweet(self, iteration, decay_level, snippet, commit, use_hashtags, style_name):
         """More descriptive style"""
         intro = random.choice([
             f"The code continues to forget itself.",
@@ -195,11 +245,17 @@ class ErosionBroadcaster:
         
         if snippet:
             snippet = snippet.strip()[:120]
-            return f"{intro}\n\n{snippet}\n\nIteration {iteration} | {decay_level} erosion\n#DigitalErosion #GenerativeArt"
+            tweet = f"{intro}\n\n{snippet}\n\nIteration {iteration} | {decay_level} erosion"
         else:
-            return f"{intro}\n\nIteration {iteration}: {decay_level} erosion\n#DigitalErosion"
+            tweet = f"{intro}\n\nIteration {iteration}: {decay_level} erosion"
+        
+        if use_hashtags:
+            hashtags = self.get_hashtags(style_name)
+            tweet += f"\n{' '.join(hashtags)}"
+        
+        return tweet
     
-    def abstract_tweet(self, iteration, decay_level, snippet, commit):
+    def abstract_tweet(self, iteration, decay_level, snippet, commit, use_hashtags, style_name):
         """Abstract, artistic style"""
         if snippet and any(char in snippet for char in ['*', '#', '~', '`']):
             # If we have good corruption, let it speak
@@ -209,7 +265,11 @@ class ErosionBroadcaster:
                     visual += char
             
             if visual.strip():
-                return f"{visual}\n\niteration {iteration}\n#DigitalErosion #CodePoetry"
+                tweet = f"{visual}\n\niteration {iteration}"
+                if use_hashtags:
+                    hashtags = self.get_hashtags(style_name)
+                    tweet += f"\n{' '.join(hashtags)}"
+                return tweet
         
         # Create abstract representation
         decay_symbols = {
@@ -223,9 +283,14 @@ class ErosionBroadcaster:
         symbol = decay_symbols.get(decay_level, "·")
         bar = symbol * min(int(iteration) % 20 + 1, 20)
         
-        return f"{bar}\n\niteration {iteration}: {decay_level}\n#DigitalErosion"
+        tweet = f"{bar}\n\niteration {iteration}: {decay_level}"
+        if use_hashtags:
+            hashtags = self.get_hashtags(style_name)
+            tweet += f"\n{' '.join(hashtags)}"
+        
+        return tweet
     
-    def diagnostic_tweet(self, iteration, decay_level, snippet, commit):
+    def diagnostic_tweet(self, iteration, decay_level, snippet, commit, use_hashtags, style_name):
         """Technical, diagnostic style"""
         mutations_match = re.search(r'(\d+) mutations', commit['message'])
         mutations = mutations_match.group(1) if mutations_match else "?"
@@ -233,12 +298,15 @@ class ErosionBroadcaster:
         tweet = f"[EROSION LOG]\n"
         tweet += f"Iteration: {iteration}\n"
         tweet += f"Decay: {decay_level}\n"
-        tweet += f"Mutations: {mutations}\n"
+        tweet += f"Mutations: {mutations}"
         
         if snippet and len(snippet) < 100:
-            tweet += f"\nCorruption sample:\n{snippet[:80]}\n"
+            tweet += f"\n\nCorruption sample:\n{snippet[:80]}"
         
-        tweet += "\n#DigitalErosion #SoftwareArt"
+        if use_hashtags:
+            hashtags = self.get_hashtags(style_name)
+            tweet += f"\n\n{' '.join(hashtags)}"
+        
         return tweet
     
     def should_tweet(self, commit):
