@@ -319,12 +319,12 @@ class ErosionBroadcaster:
         if commit['hash'] == self.state.get('last_tweeted_commit'):
             return False
         
-        # Tweet based on iteration number (every 6 hours = every 6 iterations)
+        # Tweet based on iteration number 
         iteration_match = re.search(r'iteration (\d+)', commit['message'])
         if iteration_match:
             iteration = int(iteration_match.group(1))
-            # Tweet every 6 iterations, or if it's a milestone
-            if iteration % 6 == 0 or iteration in [10, 50, 100, 500, 1000]:
+            # Tweet every iteration for now (can adjust later), or if it's a milestone
+            if iteration > 0 or iteration in [10, 50, 100, 500, 1000]:
                 return True
         
         # Tweet if decay is severe or critical
