@@ -2,8 +2,8 @@ name: Erosion Broadcaster
 
 on:
   schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
+    # Run every 3 hours
+    - cron: '0 */3 * * *'
   workflow_dispatch:  # Allow manual trigger
   repository_dispatch:
     types: [erosion_milestone]  # Can be triggered by erosion repo
